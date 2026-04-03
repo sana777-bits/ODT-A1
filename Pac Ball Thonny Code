@@ -1,1 +1,72 @@
+from machine import Pin, PWM
+from neopixel import NeoPixel
+import time
 
+# setting up the components
+score_light = NeoPixel(Pin(14), 16)
+servo = PWM(Pin(13), freq=50)
+ir_sensor = Pin(4, Pin.IN)
+
+# the game variables
+history = [0] * 16
+round_no = 0
+
+print("GAME STARTING... NOW!")
+
+while round_no < 16:
+    print("ROUND", round_no + 1, "START")
+
+    won_round = False
+
+    # during the round- 2 seconds ---
+    score_light[round_no] = (0, 0, 50)
+    score_light.write()
+
+    servo_left = True
+
+    for tick in range(100):
+
+        if servo_left:
+            servo.duty(40)        # servo goes left
+            servo_left = False
+        else:
+            servo.duty(100)       # servo goes right
+            servo_left = True
+
+        if ir_sensor.value() == 0:
+            print("GOAL!")
+            won_round = True
+            break
+
+        time.sleep(0.02)
+
+    # the result- neo pixel lights up
+    servo.duty(0)
+
+    if won_round:
+        history[round_no] = 1
+        res_color = (0, 150, 0)   # Green
+    else:
+        history[round_no] = 2
+        res_color = (150, 0, 0)   # Red
+        print("MISSED")
+
+    # the entire ring lights up one colour after the round, green or red depending on win or loss
+    score_light.fill(res_color)
+    score_light.write()
+    time.sleep(0.6)
+
+    # update the entire neopixel, aka, the score board
+    for i in range(16):
+        if history[i] == 1:
+            pixels[i] = (0, 150, 0)   # these always stay green to indicate a round won
+        elif history[i] == 2:
+            pixels[i] = (150, 0, 0)   # these always stay red to indicate a lost round
+        else:
+            pixels[i] = (2, 2, 2)     # Dim standby
+    score_light.write()
+
+    round_no += 1
+    time.sleep(1)
+
+print("Game Over!!")
